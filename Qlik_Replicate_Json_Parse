@@ -1,0 +1,63 @@
+import pandas as pd
+import json
+
+
+with open(r'C:\Users\Sdoss\Downloads\Qlik_Replication_Definition.json') as f:
+
+    files = [(f, 'PRD01')]
+
+    rows = []
+
+    for file, environment in files:
+        data = json.load(file)
+
+        task_list = data['cmd.replication_definition']['tasks']
+
+
+
+        for entry in task_list:
+            task_info = entry.get('task', {})
+            source_info = entry.get('source', {})
+            source_tables = source_info.get('source_tables', {})
+            task_settings = entry.get('task_settings', {})
+            target_settings = task_settings.get('target_settings', {})
+            explicit_included_tables = source_tables.get('explicit_included_tables', [])
+
+            task_name = task_info.get('name')
+            task_source = task_info.get('source_name')
+            task_descr = task_info.get('description')
+            schema = target_settings.get('default_schema')
+
+            if not task_name or not task_source:
+                print(f"WARNING: incomplete record — {entry}")
+                continue
+
+            for table_info in explicit_included_tables:
+                database = table_info.get('owner')
+                table = table_info.get('name')
+
+
+                rows.append({
+                    'Task Name': task_name,
+                    'Task Source': task_source,
+                    'Task Description': task_descr,
+                    'Target Schema': schema,
+                    'Table Database': database,
+                    'Table Name': table
+                })
+
+df = pd.DataFrame(rows)
+
+output_file = r'C:\Users\Sdoss\Downloads\Qlik_Replicate_PRD01.xlsx'
+df.to_excel(output_file, index=False)
+
+print(f'Exported {len(df)} tables to {output_file}')
+
+#print(df.to_string(index=False))
+
+#print(
+#    f'Task name: {task_name}\n',
+#    f'Task source: {task_source}\n', 
+#    f'Schema name: {schema}\n', 
+#    f'Database & Table name: {database}.{table}'
+#)
